@@ -1,7 +1,7 @@
 body[data-route=""] .navbar-default,
 body[data-route="desktop"] .navbar-default {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-color: rgba(54, 65, 76, 0.1);
+  background-color: rgba(0, 0, 0, 0.9);
+  border-color: rgba(0, 0, 0, 0.1);
 }
 #page-desktop {
   min-width: 100%;
@@ -185,4 +185,18 @@ body[data-route="desktop"] .navbar-default {
 body[data-route=""] .navbar-set-desktop-icons,
 body[data-route="desktop"] .navbar-set-desktop-icons {
   display: block;
+}
+::-webkit-input-placeholder { /* Chrome */
+  color: #999;
+}
+:-ms-input-placeholder { /* IE 10+ */
+  color: #999;
+}
+::-moz-placeholder { /* Firefox 19+ */
+  color: #999;
+  opacity: 1;
+}
+:-moz-placeholder { /* Firefox 4 - 18 */
+  color: #999;
+  opacity: 1;
 }
