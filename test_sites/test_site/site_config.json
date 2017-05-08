@@ -7,6 +7,11 @@
  "mail_password": "test",
  "admin_password": "admin",
  "run_selenium_tests": 1,
+<<<<<<< HEAD
+ "host_name": "http://localhost:8000"
+}
+=======
  "host_name": "http://localhost:8000",
  "install_apps": ["erpnext"]
 }
+>>>>>>> 3f7fff04f4efd05b38f89bf2d4a3b89337ccafac

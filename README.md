@@ -1,3 +1,29 @@
+<<<<<<< HEAD
+## Frappe Framework
+
+[![Build Status](https://travis-ci.org/frappe/frappe.png)](https://travis-ci.org/frappe/frappe)
+
+Full-stack web application framework that uses Python and MariaDB on the server side and a tightly integrated client side library. Built for [ERPNext](https://erpnext.com)
+
+### Installation
+
+[Install via Frappe Bench](https://github.com/frappe/bench)
+
+## Contributing
+
+1. [Pull Request Requirements](https://github.com/frappe/erpnext/wiki/Pull-Request-Guidelines)
+1. [Translations](https://translate.erpnext.com)
+
+### Website
+
+For details and documentation, see the website
+
+[https://frappe.io](https://frappe.io)
+
+### License
+
+MIT License
+=======
 # ERPNext - ERP made simple
 
 [![Build Status](https://travis-ci.org/frappe/erpnext.png)](https://travis-ci.org/frappe/erpnext) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/frappe/erpnext?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -83,3 +109,4 @@ Please note that it is not the goal of this policy to limit commercial activity 
 When in doubt about your use of the ERPNext name or logo, please contact Frappe Technologies for clarification.
 
 (inspired by WordPress)
+>>>>>>> 3f7fff04f4efd05b38f89bf2d4a3b89337ccafac
