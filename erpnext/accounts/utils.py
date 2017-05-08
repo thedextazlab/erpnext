@@ -4,14 +4,13 @@
 from __future__ import unicode_literals
 
 import frappe
+import frappe.defaults
 from frappe.utils import nowdate, cstr, flt, cint, now, getdate
 from frappe import throw, _
-from frappe.utils import formatdate
+from frappe.utils import formatdate, get_number_format_info
 
 # imported to enable erpnext.accounts.utils.get_account_currency
 from erpnext.accounts.doctype.account.account import get_account_currency
-import frappe.defaults
-from erpnext.accounts.report.financial_statements import sort_root_accounts
 
 class FiscalYearError(frappe.ValidationError): pass
 
@@ -20,32 +19,63 @@ def get_fiscal_year(date=None, fiscal_year=None, label="Date", verbose=1, compan
 	return get_fiscal_years(date, fiscal_year, label, verbose, company, as_dict=as_dict)[0]
 
 def get_fiscal_years(transaction_date=None, fiscal_year=None, label="Date", verbose=1, company=None, as_dict=False):
-	# if year start date is 2012-04-01, year end date should be 2013-03-31 (hence subdate)
-	cond = " disabled = 0"
-	if fiscal_year:
-		cond += " and fy.name = %(fiscal_year)s"
-	else:
-		cond += " and %(transaction_date)s >= fy.year_start_date and %(transaction_date)s <= fy.year_end_date"
+	fiscal_years = frappe.cache().hget("fiscal_years", company) or []
+	
+	if not fiscal_years:		
+		# if year start date is 2012-04-01, year end date should be 2013-03-31 (hence subdate)
+		cond = ""
+		if fiscal_year:
+			cond += " and fy.name = {0}".format(frappe.db.escape(fiscal_year))
+		if company:
+			cond += """
+				and (not exists (select name 
+					from `tabFiscal Year Company` fyc 
+					where fyc.parent = fy.name) 
+				or exists(select company 
+					from `tabFiscal Year Company` fyc 
+					where fyc.parent = fy.name 
+					and fyc.company=%(company)s)
+				)
+			"""
 
-	if company:
-		cond += """ and (not exists(select name from `tabFiscal Year Company` fyc where fyc.parent = fy.name)
-			or exists(select company from `tabFiscal Year Company` fyc where fyc.parent = fy.name and fyc.company=%(company)s ))"""
+		fiscal_years = frappe.db.sql("""
+			select 
+				fy.name, fy.year_start_date, fy.year_end_date 
+			from 
+				`tabFiscal Year` fy
+			where 
+				disabled = 0 {0}
+			order by 
+				fy.year_start_date desc""".format(cond), {
+				"company": company
+			}, as_dict=True)
+			
+		frappe.cache().hset("fiscal_years", company, fiscal_years)
 
-	fy = frappe.db.sql("""select fy.name, fy.year_start_date, fy.year_end_date from `tabFiscal Year` fy
-		where %s order by fy.year_start_date desc""" % cond, {
-			"fiscal_year": fiscal_year,
-			"transaction_date": transaction_date,
-			"company": company
-		}, as_dict=as_dict)
+	if transaction_date:
+		transaction_date = getdate(transaction_date)
 
-	if not fy:
-		error_msg = _("""{0} {1} not in any active Fiscal Year. For more details check {2}.""").format(label, formatdate(transaction_date), "https://frappe.github.io/erpnext/user/manual/en/accounts/articles/fiscal-year-error")
-		if verbose==1: frappe.msgprint(error_msg)
-		raise FiscalYearError, error_msg
-	return fy
+	for fy in fiscal_years:
+		matched = False
+		if fiscal_year and fy.name == fiscal_year:
+			matched = True
 
-def validate_fiscal_year(date, fiscal_year, label=_("Date"), doc=None):
-	years = [f[0] for f in get_fiscal_years(date, label=label)]
+		if (transaction_date and getdate(fy.year_start_date) <= transaction_date 
+			and getdate(fy.year_end_date) >= transaction_date):
+			matched = True
+			
+		if matched:
+			if as_dict:
+				return (fy,)
+			else:
+				return ((fy.name, fy.year_start_date, fy.year_end_date),)
+
+	error_msg = _("""{0} {1} not in any active Fiscal Year.""").format(label, formatdate(transaction_date))
+	if verbose==1: frappe.msgprint(error_msg)
+	raise FiscalYearError, error_msg
+
+def validate_fiscal_year(date, fiscal_year, company, label="Date", doc=None):
+	years = [f[0] for f in get_fiscal_years(date, label=_(label), company=company)]
 	if fiscal_year not in years:
 		if doc:
 			doc.fiscal_year = years[0]
@@ -211,6 +241,7 @@ def add_ac(args=None):
 	if not args:
 		args = frappe.local.form_dict
 
+	args.doctype = "Account"
 	args = make_tree_args(**args)
 
 	ac = frappe.new_doc("Account")
@@ -240,7 +271,8 @@ def add_cc(args=None):
 
 	if not args:
 		args = frappe.local.form_dict
-
+	
+	args.doctype = "Cost Center"
 	args = make_tree_args(**args)
 
 	cc = frappe.new_doc("Cost Center")
@@ -504,15 +536,14 @@ def get_stock_and_account_difference(account_list=None, posting_date=None):
 
 	return difference
 
-def get_currency_precision(currency=None):
-	if not currency:
-		currency = frappe.db.get_value("Company",
-			frappe.db.get_default("Company"), "default_currency", cache=True)
-	currency_format = frappe.db.get_value("Currency", currency, "number_format", cache=True)
-
-	from frappe.utils import get_number_format_info
-	return get_number_format_info(currency_format)[2]
-
+def get_currency_precision():	
+	precision = cint(frappe.db.get_default("currency_precision"))
+	if not precision:
+		number_format = frappe.db.get_default("number_format") or "#,###.##"
+		precision = get_number_format_info(number_format)[2]
+	
+	return precision
+	
 def get_stock_rbnb_difference(posting_date, company):
 	stock_items = frappe.db.sql_list("""select distinct item_code
 		from `tabStock Ledger Entry` where company=%s""", company)
@@ -620,6 +651,8 @@ def get_companies():
 
 @frappe.whitelist()
 def get_children():
+	from erpnext.accounts.report.financial_statements import sort_root_accounts
+	
 	args = frappe.local.form_dict
 	doctype, company = args['doctype'], args['company']
 	fieldname = frappe.db.escape(doctype.lower().replace(' ','_'))
@@ -660,18 +693,8 @@ def get_children():
 
 	return acc
 
-def create_payment_gateway_and_account(gateway):
-	create_payment_gateway(gateway)
+def create_payment_gateway_account(gateway):
 	create_payment_gateway_account(gateway)
-
-def create_payment_gateway(gateway):
-	# NOTE: we don't translate Payment Gateway name because it is an internal doctype
-	if not frappe.db.exists("Payment Gateway", gateway):
-		payment_gateway = frappe.get_doc({
-			"doctype": "Payment Gateway",
-			"gateway": gateway
-		})
-		payment_gateway.insert(ignore_permissions=True)
 
 def create_payment_gateway_account(gateway):
 	from erpnext.setup.setup_wizard.setup_wizard import create_bank_account

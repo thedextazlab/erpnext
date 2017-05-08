@@ -3,12 +3,14 @@
 
 from __future__ import unicode_literals
 import frappe
-import math
 from frappe import _
 from frappe.utils import (flt, getdate, get_first_day, get_last_day, date_diff,
 	add_months, add_days, formatdate, cint)
+from erpnext.accounts.utils import get_fiscal_year
 
-def get_period_list(from_fiscal_year, to_fiscal_year, periodicity):
+
+def get_period_list(from_fiscal_year, to_fiscal_year, periodicity, accumulated_values=False, 
+	company=None, reset_period_on_fy_change=True):
 	"""Get a list of dict {"from_date": from_date, "to_date": to_date, "key": key, "label": label}
 		Periodicity can be (Yearly, Quarterly, Monthly)"""
 
@@ -50,7 +52,8 @@ def get_period_list(from_fiscal_year, to_fiscal_year, periodicity):
 			# if a fiscal year ends before a 12 month period
 			period.to_date = year_end_date
 
-		period.to_date_fiscal_year = get_date_fiscal_year(period.to_date)
+		period.to_date_fiscal_year = get_fiscal_year(period.to_date, company=company)[0]
+		period.from_date_fiscal_year_start_date = get_fiscal_year(period.from_date, company=company)[1]
 
 		period_list.append(period)
 
@@ -60,11 +63,17 @@ def get_period_list(from_fiscal_year, to_fiscal_year, periodicity):
 	# common processing
 	for opts in period_list:
 		key = opts["to_date"].strftime("%b_%Y").lower()
-		if periodicity == "Monthly":
+		if periodicity == "Monthly" and not accumulated_values:
 			label = formatdate(opts["to_date"], "MMM YYYY")
 		else:
-			label = get_label(periodicity, opts["from_date"], opts["to_date"])
-			
+			if not accumulated_values:
+				label = get_label(periodicity, opts["from_date"], opts["to_date"])
+			else:
+				if reset_period_on_fy_change:
+					label = get_label(periodicity, opts.from_date_fiscal_year_start_date, opts["to_date"])
+				else:
+					label = get_label(periodicity, period_list[0].from_date, opts["to_date"])
+
 		opts.update({
 			"key": key.replace(" ", "_").replace("-", "_"),
 			"label": label,
@@ -141,17 +150,13 @@ def calculate_values(accounts_by_name, gl_entries_by_account, period_list, accum
 
 				if entry.posting_date <= period.to_date:
 					if (accumulated_values or entry.posting_date >= period.from_date) and \
-						(entry.fiscal_year == period.to_date_fiscal_year or not ignore_accumulated_values_for_fy):
+						(not ignore_accumulated_values_for_fy or 
+							entry.fiscal_year == period.to_date_fiscal_year):
 						d[period.key] = d.get(period.key, 0.0) + flt(entry.debit) - flt(entry.credit)
 
 			if entry.posting_date < period_list[0].year_start_date:
 				d["opening_balance"] = d.get("opening_balance", 0.0) + flt(entry.debit) - flt(entry.credit)
 				
-def get_date_fiscal_year(date):
-	from erpnext.accounts.utils import get_fiscal_year
-	
-	return get_fiscal_year(date)[0]
-
 def accumulate_values_into_parents(accounts, accounts_by_name, period_list, accumulated_values):
 	"""accumulate children's values in parent accounts"""
 	for d in reversed(accounts):
@@ -219,7 +224,7 @@ def filter_out_zero_value_rows(data, parent_children_map, show_zero_values=False
 def add_total_row(out, root_type, balance_must_be, period_list, company_currency):
 	total_row = {
 		"account_name": "'" + _("Total {0} ({1})").format(root_type, balance_must_be) + "'",
-		"account": None,
+		"account": "'" + _("Total {0} ({1})").format(root_type, balance_must_be) + "'",
 		"currency": company_currency
 	}
 

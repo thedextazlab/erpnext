@@ -11,7 +11,7 @@ def get_domain(domain):
 			'desktop_icons': ['Item', 'BOM', 'Customer', 'Supplier', 'Sales Order',
 				'Production Order',  'Stock Entry', 'Purchase Order', 'Task', 'Buying', 'Selling',
 				 'Accounts', 'HR', 'ToDo'],
-			'remove_roles': ['Academics User'],
+			'remove_roles': ['Academics User', 'Instructor'],
 			'properties': [
 				{'doctype': 'Item', 'fieldname': 'manufacturing', 'property': 'collapsible_depends_on', 'value': 'is_stock_item'},
 			],
@@ -22,9 +22,9 @@ def get_domain(domain):
 		},
 
 		'Retail': {
-			'desktop_icons': ['POS', 'Item', 'Customer', 'Sales Invoice',  'Purchase Order', 'Warranty Claim',
-			'Accounts', 'Buying', 'ToDo'],
-			'remove_roles': ['Manufacturing User', 'Manufacturing Manager', 'Academics User'],
+			'desktop_icons': ['POS', 'Item', 'Customer', 'Sales Invoice',  'Purchase Order',
+			'Warranty Claim', 'Accounts', 'Task', 'Buying', 'ToDo'],
+			'remove_roles': ['Manufacturing User', 'Manufacturing Manager', 'Academics User', 'Instructor'],
 			'properties': [
 				{'doctype': 'Item', 'fieldname': 'manufacturing', 'property': 'hidden', 'value': 1},
 				{'doctype': 'Customer', 'fieldname': 'credit_limit_section', 'property': 'hidden', 'value': 1},
@@ -36,9 +36,9 @@ def get_domain(domain):
 		},
 
 		'Distribution': {
-			'desktop_icons': ['Item', 'Customer', 'Supplier', 'Lead', 'Sales Order',
+			'desktop_icons': ['Item', 'Customer', 'Supplier', 'Lead', 'Sales Order', 'Task',
 				 'Sales Invoice', 'CRM', 'Selling', 'Buying', 'Stock', 'Accounts', 'HR', 'ToDo'],
-			'remove_roles': ['Manufacturing User', 'Manufacturing Manager', 'Academics User'],
+			'remove_roles': ['Manufacturing User', 'Manufacturing Manager', 'Academics User', 'Instructor'],
 			'set_value': [
 				['Stock Settings', None, 'show_barcode_field', 1]
 			],
@@ -46,9 +46,9 @@ def get_domain(domain):
 		},
 
 		'Services': {
-			'desktop_icons': ['Project', 'Timesheet', 'Customer', 'Sales Order', 'Sales Invoice', 'Lead', 'Opportunity',
-				'Expense Claim', 'Employee', 'HR', 'ToDo'],
-			'remove_roles': ['Manufacturing User', 'Manufacturing Manager', 'Academics User'],
+			'desktop_icons': ['Project', 'Timesheet', 'Customer', 'Sales Order', 'Sales Invoice',
+				'Lead', 'Opportunity', 'Task', 'Expense Claim', 'Employee', 'HR', 'ToDo'],
+			'remove_roles': ['Manufacturing User', 'Manufacturing Manager', 'Academics User', 'Instructor'],
 			'properties': [
 				{'doctype': 'Item', 'fieldname': 'is_stock_item', 'property': 'default', 'value': 0},
 			],
@@ -59,10 +59,10 @@ def get_domain(domain):
 		},
 		'Education': {
 			'desktop_icons': ['Student', 'Program', 'Course', 'Student Group', 'Instructor',
-				'Fees',  'ToDo', 'Schools'],
+				'Fees',  'Task', 'ToDo', 'Schools'],
 			'allow_roles': ['Academics User', 'Accounts User', 'Accounts Manager', 'Item Manager',
 				'Website Manager', 'HR User', 'HR Manager', 'Purchase User', 'Purchase Manager',
-				'Student'],
+				'Student', 'Projects User', 'Instructor'],
 			'default_portal_role': 'Student'
 		},
 	}
@@ -96,7 +96,7 @@ def setup_properties(data):
 def setup_roles(data):
 	'''Add, remove roles from `data.allow_roles` or `data.remove_roles`'''
 	def remove_role(role):
-		frappe.db.sql('delete from tabUserRole where role=%s', role)
+		frappe.db.sql('delete from `tabHas Role` where role=%s', role)
 		frappe.set_value('Role', role, 'disabled', 1)
 
 	if data.remove_roles:

@@ -34,14 +34,16 @@ erpnext.SalesAnalytics = frappe.views.TreeGridReport.extend({
 				show: true,
 				item_key: "customer",
 				parent_field: "parent_customer_group",
-				formatter: function(item) { return item.customer_name || item.name; }
+				formatter: function(item) {
+					return item.customer_name? item.customer_name + " (" + item.name + ")" : item.name; 
+				}
 			},
 			"Customer": {
 				label: __("Customer"),
 				show: false,
 				item_key: "customer",
 				formatter: function(item) {
-					return item.customer_name || item.name;
+					return item.customer_name? item.customer_name + " (" + item.name + ")" : item.name;
 				}
 			},
 			"Item Group": {
@@ -67,7 +69,7 @@ erpnext.SalesAnalytics = frappe.views.TreeGridReport.extend({
 				item_key: "customer",
 				parent_field: "parent_territory",
 				formatter: function(item) {
-					return item.name;
+					return item.customer_name? item.customer_name + " (" + item.name + ")" : item.name;
 				}
 			}
 		}
@@ -202,7 +204,9 @@ erpnext.SalesAnalytics = frappe.views.TreeGridReport.extend({
 				if (posting_date >= from_date && posting_date <= to_date) {
 					var item = me.item_by_name[tl[me.tree_grid.item_key]] ||
 						me.item_by_name['Not Set'];
-					item[me.column_map[tl.posting_date].field] += (is_val ? tl.base_net_amount : tl.qty);
+					if(item){
+						item[me.column_map[tl.posting_date].field] += (is_val ? tl.base_net_amount : tl.qty);
+					}
 				}
 			}
 		});

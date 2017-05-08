@@ -8,16 +8,18 @@ from frappe.utils import cstr
 from frappe import msgprint, throw, _
 
 from frappe.model.document import Document
+from frappe.permissions import get_doctypes_with_read
 
 class NamingSeriesNotSetError(frappe.ValidationError): pass
 
 class NamingSeries(Document):
 	def get_transactions(self, arg=None):
 		doctypes = list(set(frappe.db.sql_list("""select parent
-				from `tabDocField` df where fieldname='naming_series' and 
-				exists(select * from `tabDocPerm` dp, `tabRole` role where dp.role = role.name and dp.parent = df.parent and not role.disabled)""")
+				from `tabDocField` df where fieldname='naming_series'""")
 			+ frappe.db.sql_list("""select dt from `tabCustom Field`
 				where fieldname='naming_series'""")))
+
+		doctypes = list(set(get_doctypes_with_read()) | set(doctypes))
 
 		prefixes = ""
 		for d in doctypes:
@@ -128,7 +130,8 @@ class NamingSeries(Document):
 			throw(_('Special Characters except "-", "#", "." and "/" not allowed in naming series'))
 
 	def get_options(self, arg=None):
-		return frappe.get_meta(arg or self.select_doc_for_series).get_field("naming_series").options
+		if frappe.get_meta(arg or self.select_doc_for_series).get_field("naming_series"):
+			return frappe.get_meta(arg or self.select_doc_for_series).get_field("naming_series").options
 
 	def get_current(self, arg=None):
 		"""get series current"""
@@ -138,7 +141,7 @@ class NamingSeries(Document):
 
 	def insert_series(self, series):
 		"""insert series if missing"""
-		if not frappe.db.exists('Series', series):
+		if not frappe.db.get_value('Series', series, 'name', order_by="name"):
 			frappe.db.sql("insert into tabSeries (name, current) values (%s, 0)", (series))
 
 	def update_series_start(self):

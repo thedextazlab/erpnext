@@ -17,6 +17,21 @@ frappe.query_reports["Accounts Receivable"] = {
 			"options": "Customer"
 		},
 		{
+			"fieldname":"customer_group",
+			"label": __("Customer Group"),
+			"fieldtype": "Link",
+			"options": "Customer Group"
+		},
+		{
+			"fieldname":"credit_days_based_on",
+			"label": __("Credit Days Based On"),
+			"fieldtype": "Select",
+			"options": "" + NEWLINE + "Fixed Days" + NEWLINE + "Last Day of the Next Month"
+		},
+		{
+			"fieldtype": "Break",
+		},
+		{
 			"fieldname":"report_date",
 			"label": __("As on Date"),
 			"fieldtype": "Date",
@@ -28,9 +43,6 @@ frappe.query_reports["Accounts Receivable"] = {
 			"fieldtype": "Select",
 			"options": 'Posting Date' + NEWLINE + 'Due Date',
 			"default": "Posting Date"
-		},
-		{
-			"fieldtype": "Break",
 		},
 		{
 			"fieldname":"range1",
@@ -53,5 +65,12 @@ frappe.query_reports["Accounts Receivable"] = {
 			"default": "90",
 			"reqd": 1
 		}
-	]
+	],
+
+	onload: function(report) {
+		report.page.add_inner_button(__("Accounts Receivable Summary"), function() {
+			var filters = report.get_values();
+			frappe.set_route('query-report', 'Accounts Receivable Summary', {company: filters.company});
+		});
+	}
 }
