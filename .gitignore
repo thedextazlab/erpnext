@@ -1,5 +1,6 @@
 *.pyc
 *.py~
+<<<<<<< HEAD
 *.comp.js
 *.DS_Store
 locale
@@ -9,3 +10,13 @@ locale
 dist/
 build/
 frappe/docs/current
+=======
+.DS_Store
+conf.py
+locale
+latest_updates.json
+.wnf-lang-status
+*.egg-info
+dist/
+erpnext/docs/current
+>>>>>>> 3f7fff04f4efd05b38f89bf2d4a3b89337ccafac

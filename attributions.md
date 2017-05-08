@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## Frappe framework includes these public works
 
 ### Javascript / CSS
@@ -48,3 +49,12 @@
 ---
 
 Last updated: 1st Jan 2015
+=======
+## ERPNext includes these public works
+
+For Frappe Framework, please see attributions.md at https://github.com/frappe/frappe/
+
+#### Images
+
+POS Icon: https://thenounproject.com/icon/41958 by hunotika
+>>>>>>> 3f7fff04f4efd05b38f89bf2d4a3b89337ccafac
